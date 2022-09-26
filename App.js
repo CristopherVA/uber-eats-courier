@@ -5,24 +5,15 @@ import orders from './assets/data/orders.json'
 
 // Screen
 import OrderScreen from './src/screens/OrderScreen';
-// Components
-import OrderItem from './src/components/OrderItem';
-
+import OrderDeliver from './src/screens/OrderDelivery';
 
 const order = orders[0]
+
 
 export default function App() {
   return (
     <View style={styles.container}>
-
-      <OrderScreen />
-      {/* <FlatList 
-        data={orders}
-        renderItem={({item}) => <OrderItem order={item} />}
-      /> */}
-      
-   
-
+      <OrderDeliver />
       <StatusBar style="auto" />
     </View>
   );
