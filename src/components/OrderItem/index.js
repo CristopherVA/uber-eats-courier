@@ -1,11 +1,16 @@
-import { View, Text, Image } from 'react-native'
+import { View, Text, Image, Pressable } from 'react-native'
 import React from 'react'
 import { Entypo } from "@expo/vector-icons"
+import { useNavigation } from '@react-navigation/native'
 
 
 const OrderItem = ({ order }) => {
+
+   const navigation = useNavigation()
+
+
    return (
-      <View style={{
+      <Pressable onPress={() => navigation.navigate("OrderDelivery", {id: order.id})} style={{
          flexDirection: 'row',
          margin: 10,
          borderColor: '#3FC060',
@@ -44,7 +49,7 @@ const OrderItem = ({ order }) => {
                }}
             />
          </View>
-      </View>
+      </Pressable>
    )
 }
 
