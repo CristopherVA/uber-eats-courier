@@ -2,13 +2,14 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { View, Text, StyleSheet, useWindowDimensions, ActivityIndicator, Pressable } from 'react-native'
 import BottomSheet from '@gorhom/bottom-sheet';
 // import BottomSheet from 'react-native-simple-bottom-sheet'
-import { Entypo, MaterialIcons, FontAwesome5, Fontisto } from '@expo/vector-icons'
+import { Entypo, MaterialIcons, FontAwesome5, Fontisto, Ionicons } from '@expo/vector-icons'
 import MapViewDirections from 'react-native-maps-directions';
 import MapView, { Marker } from 'react-native-maps';
 import * as Location from "expo-location"
 import styles from './styles';
 
 import orders from '../../../assets/data/orders.json'
+import { useNavigation } from '@react-navigation/native';
 
 const order = orders[0]
 
@@ -24,10 +25,13 @@ const OrderDeliver = () => {
    const [totalMin, setTotalMin] = useState(0)
    const [totalKm, setTotalKm] = useState(0)
    const [deliveryStatus, setDeliveryStatus] = useState(ORDER_STATYES.READY_FOR_PICKUP)
-   const [isDriverClose, setIsDriverClose] = useState(false)
+   const [isDriverClose, setIsDriverClose] = useState(true)
    const mapRef = useRef(null)
    const { width, height } = useWindowDimensions()
    const bottomSheetRef = useRef(null);
+   const [openDetails, setOpenDetails] = useState(0)
+
+   const navigation = useNavigation()
 
    const snapPoints = useMemo(() => ["12%", "95%"], [])
 
@@ -72,7 +76,7 @@ const OrderDeliver = () => {
    }
 
    const onButtonPressed = () => {
-      if(deliveryStatus === ORDER_STATYES.READY_FOR_PICKUP){
+      if (deliveryStatus === ORDER_STATYES.READY_FOR_PICKUP) {
          bottomSheetRef.current?.collapse();
          mapRef.current.animateToRegion({
             latitude: driverLocation.latitude,
@@ -83,39 +87,45 @@ const OrderDeliver = () => {
 
          setDeliveryStatus(ORDER_STATYES.ACCEPTED);
       }
-      if ( deliveryStatus === ORDER_STATYES.ACCEPTED ) { setDeliveryStatus(ORDER_STATYES.PICKED_UP) }
-      if ( deliveryStatus === ORDER_STATYES.PICKED_UP ) { console.warn("Delivery Finished") }
+      if (deliveryStatus === ORDER_STATYES.ACCEPTED) { setDeliveryStatus(ORDER_STATYES.PICKED_UP) }
+      setOpenDetails(0)
+      if (deliveryStatus === ORDER_STATYES.PICKED_UP) {
+         console.warn("Delivery Finished")
+         navigation.goBack()
+      }
    }
 
    const renderButtonTitle = () => {
-      if(deliveryStatus === ORDER_STATYES.READY_FOR_PICKUP){
+      if (deliveryStatus === ORDER_STATYES.READY_FOR_PICKUP) {
          return "Accept Order"
       }
 
-      if(deliveryStatus === ORDER_STATYES.ACCEPTED){
+      if (deliveryStatus === ORDER_STATYES.ACCEPTED) {
          return "Pick-Up Order"
       }
 
-      if(deliveryStatus === ORDER_STATYES.PICKED_UP){
+      if (deliveryStatus === ORDER_STATYES.PICKED_UP) {
          return "Complete Delivery"
       }
    }
 
    const isButtonDisabled = () => {
-      if(deliveryStatus === ORDER_STATYES.READY_FOR_PICKUP) {
+      if (deliveryStatus === ORDER_STATYES.READY_FOR_PICKUP) {
          return false
       }
 
-      if(deliveryStatus === ORDER_STATYES.ACCEPTED && isDriverClose){
+      if (deliveryStatus === ORDER_STATYES.ACCEPTED && isDriverClose) {
          return false
       }
 
-      if(deliveryStatus ===  ORDER_STATYES.PICKED_UP && isDriverClose){
+      if (deliveryStatus === ORDER_STATYES.PICKED_UP && isDriverClose) {
          return false
       }
 
       return true
    }
+
+
 
    return (
       <View style={styles.container}>
@@ -133,17 +143,15 @@ const OrderDeliver = () => {
          >
             <MapViewDirections
                origin={driverLocation}
-               destination={deliveryStatus === ORDER_STATYES.ACCEPTED ? { latitude: order.Restaurant.lat, longitude: order.Restaurant.lng } : { latitude: order.User.lat, longitude: order.User.lng } }
+               destination={deliveryStatus === ORDER_STATYES.ACCEPTED ? { latitude: order.Restaurant.lat, longitude: order.Restaurant.lng } : { latitude: order.User.lat, longitude: order.User.lng }}
                strokeWidth={10}
-               waypoints={deliveryStatus === ORDER_STATYES.READY_FOR_PICKUP ? 
+               waypoints={deliveryStatus === ORDER_STATYES.READY_FOR_PICKUP ?
                   [{ latitude: order.Restaurant.lat, longitude: order.Restaurant.lng }] : []
                }
                strokeColor="#3FC060"
                apikey={"AIzaSyBL_jCIzt9pEeYmcpABj0AeEq4zZpdcyVc"}
                onReady={(result) => {
-                  if(result.distance <= 0.1){
-                     return setIsDriverClose(true)
-                  }
+                  setIsDriverClose(result.distance <= 0.1)
                   setTotalMin(result.duration);
                   setTotalKm(result.distance);
                }}
@@ -169,11 +177,40 @@ const OrderDeliver = () => {
                </View>
             </Marker>
          </MapView>
+         {deliveryStatus === ORDER_STATYES.READY_FOR_PICKUP && (
+            <Ionicons
+               onPress={() => navigation.goBack()}
+               name="arrow-back-circle"
+               size={42}
+               color="green"
+               style={{ top: 40, left: 15, position: 'absolute' }}
+            />
+         )}
+       
          <BottomSheet
+            index={openDetails}
             ref={bottomSheetRef}
             snapPoints={snapPoints}
             handleIndicatorStyle={styles.handleIndicatorStyle}
          >
+            {openDetails === 1 && (
+               <Ionicons
+                  onPress={() => setOpenDetails(0)}
+                  name='arrow-down'
+                  color={"black"}
+                  style={{ position: 'absolute', top: 13, left: 30 }}
+                  size={30}
+               />
+            )}
+            {openDetails === 0 && (
+               <Ionicons
+                  onPress={() => setOpenDetails(1)}
+                  name='arrow-up'
+                  color={"black"}
+                  style={{ position: 'absolute', top: 10, right: 30 }}
+                  size={30}
+               />
+            )}
             <View
                style={styles.handleIndicatorContainer}>
                <Text style={styles.routeDetailsText}>{totalMin.toFixed(0)} min</Text>
@@ -206,7 +243,7 @@ const OrderDeliver = () => {
                </View>
             </View>
 
-            <Pressable onPress={onButtonPressed}  style={{...styles.buttonContainer, backgroundColor: isButtonDisabled() ? 'grey' : '#3FC060'}} disabled={isButtonDisabled}>
+            <Pressable onPress={onButtonPressed} style={{ ...styles.buttonContainer, backgroundColor: isButtonDisabled() ? 'grey' : '#3FC060' }} disabled={isButtonDisabled()}>
                <Text style={styles.buttonText}>{renderButtonTitle()}</Text>
             </Pressable>
          </BottomSheet >
