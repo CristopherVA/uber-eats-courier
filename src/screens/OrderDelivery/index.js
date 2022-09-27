@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { View, Text, StyleSheet, useWindowDimensions, ActivityIndicator, Pressable } from 'react-native'
 import BottomSheet from '@gorhom/bottom-sheet';
+// import BottomSheet from 'react-native-simple-bottom-sheet'
 import { Entypo, MaterialIcons, FontAwesome5, Fontisto } from '@expo/vector-icons'
 import MapViewDirections from 'react-native-maps-directions';
 import MapView, { Marker } from 'react-native-maps';
@@ -28,7 +29,7 @@ const OrderDeliver = () => {
    const { width, height } = useWindowDimensions()
    const bottomSheetRef = useRef(null);
 
-   const snapPoints = useMemo(() => ["25%", "95%"], [])
+   const snapPoints = useMemo(() => ["12%", "95%"], [])
 
 
 
@@ -82,6 +83,8 @@ const OrderDeliver = () => {
 
          setDeliveryStatus(ORDER_STATYES.ACCEPTED);
       }
+      if ( deliveryStatus === ORDER_STATYES.ACCEPTED ) { setDeliveryStatus(ORDER_STATYES.PICKED_UP) }
+      if ( deliveryStatus === ORDER_STATYES.PICKED_UP ) { console.warn("Delivery Finished") }
    }
 
    const renderButtonTitle = () => {
@@ -204,7 +207,7 @@ const OrderDeliver = () => {
             </View>
 
             <Pressable onPress={onButtonPressed}  style={{...styles.buttonContainer, backgroundColor: isButtonDisabled() ? 'grey' : '#3FC060'}} disabled={isButtonDisabled}>
-               <Text style={styles.buttonText}>Accept Order</Text>
+               <Text style={styles.buttonText}>{renderButtonTitle()}</Text>
             </Pressable>
          </BottomSheet >
       </View >
