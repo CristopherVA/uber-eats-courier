@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { View, Text, StyleSheet, useWindowDimensions, ActivityIndicator, Pressable } from 'react-native'
 import BottomSheet from '@gorhom/bottom-sheet';
-// import BottomSheet from 'react-native-simple-bottom-sheet'
 import { Entypo, MaterialIcons, FontAwesome5, Fontisto, Ionicons } from '@expo/vector-icons'
 import MapViewDirections from 'react-native-maps-directions';
 import MapView, { Marker } from 'react-native-maps';
@@ -10,6 +9,7 @@ import styles from './styles';
 
 import orders from '../../../assets/data/orders.json'
 import { useNavigation } from '@react-navigation/native';
+
 
 const order = orders[0]
 
@@ -29,14 +29,10 @@ const OrderDeliver = () => {
    const mapRef = useRef(null)
    const { width, height } = useWindowDimensions()
    const bottomSheetRef = useRef(null);
-   const [openDetails, setOpenDetails] = useState(0)
-
    const navigation = useNavigation()
-
    const snapPoints = useMemo(() => ["12%", "95%"], [])
 
-
-
+ 
    useEffect(() => {
       (async () => {
 
@@ -88,7 +84,6 @@ const OrderDeliver = () => {
          setDeliveryStatus(ORDER_STATYES.ACCEPTED);
       }
       if (deliveryStatus === ORDER_STATYES.ACCEPTED) { setDeliveryStatus(ORDER_STATYES.PICKED_UP) }
-      setOpenDetails(0)
       if (deliveryStatus === ORDER_STATYES.PICKED_UP) {
          console.warn("Delivery Finished")
          navigation.goBack()
@@ -188,29 +183,11 @@ const OrderDeliver = () => {
          )}
        
          <BottomSheet
-            index={openDetails}
             ref={bottomSheetRef}
             snapPoints={snapPoints}
             handleIndicatorStyle={styles.handleIndicatorStyle}
          >
-            {openDetails === 1 && (
-               <Ionicons
-                  onPress={() => setOpenDetails(0)}
-                  name='arrow-down'
-                  color={"black"}
-                  style={{ position: 'absolute', top: 13, left: 30 }}
-                  size={30}
-               />
-            )}
-            {openDetails === 0 && (
-               <Ionicons
-                  onPress={() => setOpenDetails(1)}
-                  name='arrow-up'
-                  color={"black"}
-                  style={{ position: 'absolute', top: 10, right: 30 }}
-                  size={30}
-               />
-            )}
+            
             <View
                style={styles.handleIndicatorContainer}>
                <Text style={styles.routeDetailsText}>{totalMin.toFixed(0)} min</Text>

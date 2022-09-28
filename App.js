@@ -1,25 +1,29 @@
-
+import { GestureHandlerRootView } from "react-native-gesture-handler"
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, View, FlatList } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import Navigation from './src/navigation';
 
+import { Amplify } from "aws-amplify"
+import { withAuthenticator } from "aws-amplify-react-native";
+import awsconfig from './src/aws-exports'
+import   AuthContextProvider from './src/context/AuthContext'
+
+Amplify.configure({ ...awsconfig, Analytics: { disabled: true } })
 
 
-export default function App() {
+
+function App() {
   return (
     <NavigationContainer>
-      <Navigation />
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <AuthContextProvider>
+          <Navigation />
+        </AuthContextProvider>
+      </GestureHandlerRootView>
       <StatusBar style="auto" />
     </NavigationContainer>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    justifyContent: 'center',
-    paddingTop: 30
-  },
-});
+export default withAuthenticator(App)
