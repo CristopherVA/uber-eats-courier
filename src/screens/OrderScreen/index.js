@@ -20,7 +20,7 @@ const OrderScreen = () => {
    console.log(orders)
 
    useEffect(() => {
-      DataStore.query(Order).then(setOrders);
+      DataStore.query(Order, (o) => o.status("eq", "READY_FOR_PICKUP")).then(setOrders);
    }, [])
 
    return (

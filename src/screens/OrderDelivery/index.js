@@ -6,13 +6,9 @@ import MapViewDirections from 'react-native-maps-directions';
 import MapView, { Marker } from 'react-native-maps';
 import * as Location from "expo-location"
 import styles from './styles';
-
-import orders from '../../../assets/data/orders.json'
-import { useNavigation } from '@react-navigation/native';
-
-
-const order = orders[0]
-
+import { useNavigation, useRoute } from '@react-navigation/native';
+import { DataStore } from 'aws-amplify';
+import { Order, OrderDish, User } from '../../models';
 
 const ORDER_STATYES = {
    READY_FOR_PICKUP: "READY_FOR_PICKUP",
@@ -21,6 +17,10 @@ const ORDER_STATYES = {
 }
 
 const OrderDeliver = () => {
+   const [order, setOrder] = useState(null)
+   const [user, setUser] = useState(null)
+   const [dishItems, setDishItems] = useState(null)
+
    const [driverLocation, setDriverLocation] = useState(null)
    const [totalMin, setTotalMin] = useState(0)
    const [totalKm, setTotalKm] = useState(0)
@@ -32,7 +32,27 @@ const OrderDeliver = () => {
    const navigation = useNavigation()
    const snapPoints = useMemo(() => ["12%", "95%"], [])
 
- 
+   const route = useRoute()
+   const id = route.params?.id;
+
+   useEffect(() => {
+      if (!id) {
+         return;
+      }
+
+      DataStore.query(Order, id).then(setOrder)
+
+   }, [id])
+
+   useEffect(() => {
+      if (!order) {
+         return;
+      }
+      DataStore.query(User, order.userID).then(setUser);
+
+      DataStore.query(OrderDish, (od) => od.orderID("eq", order.id)).then(setDishItems);
+   }, [order])
+
    useEffect(() => {
       (async () => {
 
@@ -66,10 +86,6 @@ const OrderDeliver = () => {
 
    }, [])
 
-
-   if (!driverLocation) {
-      return <ActivityIndicator size={"large"} />
-   }
 
    const onButtonPressed = () => {
       if (deliveryStatus === ORDER_STATYES.READY_FOR_PICKUP) {
@@ -120,7 +136,25 @@ const OrderDeliver = () => {
       return true
    }
 
+   const restaurantLocation = {
+      latitude: order?.Restaurant.lat,
+      longitude: order?.Restaurant.lng
+   }
 
+   const deliveryLocation = {
+      latitude: user?.lat,
+      longitude: user?.lng
+   }
+
+   if (!driverLocation) {
+      return <ActivityIndicator size={"large"} />
+   }
+
+   if (!order || !user || !driverLocation) {
+      return <ActivityIndicator color={"grey"} size={"large"} />
+   }
+
+   console.log({ dishItems });
 
    return (
       <View style={styles.container}>
@@ -138,11 +172,9 @@ const OrderDeliver = () => {
          >
             <MapViewDirections
                origin={driverLocation}
-               destination={deliveryStatus === ORDER_STATYES.ACCEPTED ? { latitude: order.Restaurant.lat, longitude: order.Restaurant.lng } : { latitude: order.User.lat, longitude: order.User.lng }}
+               destination={deliveryStatus === ORDER_STATYES.ACCEPTED ? restaurantLocation : deliveryLocation}
                strokeWidth={10}
-               waypoints={deliveryStatus === ORDER_STATYES.READY_FOR_PICKUP ?
-                  [{ latitude: order.Restaurant.lat, longitude: order.Restaurant.lng }] : []
-               }
+               waypoints={deliveryStatus === ORDER_STATYES.READY_FOR_PICKUP ? [restaurantLocation, deliveryLocation] : []}
                strokeColor="#3FC060"
                apikey={"AIzaSyBL_jCIzt9pEeYmcpABj0AeEq4zZpdcyVc"}
                onReady={(result) => {
@@ -153,7 +185,7 @@ const OrderDeliver = () => {
 
             />
             <Marker
-               coordinate={{ latitude: order.Restaurant.lat, longitude: order.Restaurant.lng }}
+               coordinate={restaurantLocation}
                title={order.Restaurant.name}
                description={order.Restaurant.address}
             >
@@ -163,9 +195,9 @@ const OrderDeliver = () => {
             </Marker>
 
             <Marker
-               coordinate={{ latitude: order.User.lat, longitude: order.User.lng }}
-               title={order.User.name}
-               description={order.User.address}
+               coordinate={deliveryLocation}
+               title={user.name}
+               description={user.address}
             >
                <View style={{ backgroundColor: 'green', borderRadius: 25, padding: 5 }}>
                   <MaterialIcons name='restaurant' size={30} color="white" />
@@ -181,13 +213,13 @@ const OrderDeliver = () => {
                style={{ top: 40, left: 15, position: 'absolute' }}
             />
          )}
-       
+
          <BottomSheet
             ref={bottomSheetRef}
             snapPoints={snapPoints}
             handleIndicatorStyle={styles.handleIndicatorStyle}
          >
-            
+
             <View
                style={styles.handleIndicatorContainer}>
                <Text style={styles.routeDetailsText}>{totalMin.toFixed(0)} min</Text>
@@ -209,7 +241,7 @@ const OrderDeliver = () => {
 
                <View style={{ flexDirection: 'row', marginBottom: 20 }}>
                   <FontAwesome5 name="map-marker-alt" size={30} color="grey" style={{ marginRight: 5 }} />
-                  <Text style={styles.adressText}>{order.User.address}</Text>
+                  <Text style={styles.adressText}>{user.address}</Text>
                </View>
 
                <View style={styles.orderDetailsContainer}>

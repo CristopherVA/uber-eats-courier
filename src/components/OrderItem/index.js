@@ -34,8 +34,8 @@ const OrderItem = ({ order }) => {
 
             <Text style={{ marginTop: 8, fontWeight: '500', fontSize: 16 }}>Delivery Details:</Text>
 
-            <Text style={{ color: 'grey' }}>{order.User?.name}</Text>
-            <Text style={{ color: 'grey' }}>{order.User?.address}</Text>
+            <Text style={{ color: 'grey' }}>{user?.name}</Text>
+            <Text style={{ color: 'grey' }}>{user?.address}</Text>
          </View>
 
          <View
