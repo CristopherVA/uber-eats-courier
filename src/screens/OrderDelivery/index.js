@@ -19,7 +19,7 @@ const ORDER_STATYES = {
 const OrderDeliver = () => {
    const [order, setOrder] = useState(null)
    const [user, setUser] = useState(null)
-   const [dishItems, setDishItems] = useState(null)
+   const [dishItems, setDishItems] = useState([])
 
    const [driverLocation, setDriverLocation] = useState(null)
    const [totalMin, setTotalMin] = useState(0)
@@ -209,7 +209,7 @@ const OrderDeliver = () => {
                onPress={() => navigation.goBack()}
                name="arrow-back-circle"
                size={42}
-               color="green"
+               color="black"
                style={{ top: 40, left: 15, position: 'absolute' }}
             />
          )}
@@ -245,10 +245,12 @@ const OrderDeliver = () => {
                </View>
 
                <View style={styles.orderDetailsContainer}>
-                  <Text style={styles.orderItemText}>Onion Rings x1</Text>
-                  <Text style={styles.orderItemText} >Big Mac x3</Text>
-                  <Text style={styles.orderItemText} >Big Tasty x2</Text>
-                  <Text style={styles.orderItemText} >Coca-cola x1</Text>
+                  {
+                     dishItems.map(item => (
+                        <Text style={styles.orderItemText} key={item.id}>{item.Dish.name} x{item.quantity}</Text>
+                     ))
+                  }
+                  
                </View>
             </View>
 
