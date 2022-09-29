@@ -8,24 +8,24 @@ import * as Location from "expo-location"
 import styles from './styles';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { DataStore } from 'aws-amplify';
-import { Order, OrderDish, User } from '../../models';
+import { Order, OrderDish, OrderStatus, User } from '../../models';
+import { useOrderContext } from '../../context/OrderContext';
 
-const ORDER_STATYES = {
-   READY_FOR_PICKUP: "READY_FOR_PICKUP",
-   ACCEPTED: "ACCEPTED",
-   PICKED_UP: "PICKED_UP"
-}
+// const ORDER_STATYES = {
+//    READY_FOR_PICKUP: "READY_FOR_PICKUP",
+//    ACCEPTED: "ACCEPTED",
+//    PICKED_UP: "PICKED_UP"
+// }
 
 const OrderDeliver = () => {
-   const [order, setOrder] = useState(null)
-   const [user, setUser] = useState(null)
-   const [dishItems, setDishItems] = useState([])
 
+   const { order, user, dishes, acceptOrder, fetchOrder, pickUpOrder, completeOrder } = useOrderContext()
    const [driverLocation, setDriverLocation] = useState(null)
    const [totalMin, setTotalMin] = useState(0)
    const [totalKm, setTotalKm] = useState(0)
-   const [deliveryStatus, setDeliveryStatus] = useState(ORDER_STATYES.READY_FOR_PICKUP)
    const [isDriverClose, setIsDriverClose] = useState(true)
+
+
    const mapRef = useRef(null)
    const { width, height } = useWindowDimensions()
    const bottomSheetRef = useRef(null);
@@ -36,22 +36,8 @@ const OrderDeliver = () => {
    const id = route.params?.id;
 
    useEffect(() => {
-      if (!id) {
-         return;
-      }
-
-      DataStore.query(Order, id).then(setOrder)
-
+      fetchOrder(id)
    }, [id])
-
-   useEffect(() => {
-      if (!order) {
-         return;
-      }
-      DataStore.query(User, order.userID).then(setUser);
-
-      DataStore.query(OrderDish, (od) => od.orderID("eq", order.id)).then(setDishItems);
-   }, [order])
 
    useEffect(() => {
       (async () => {
@@ -87,8 +73,8 @@ const OrderDeliver = () => {
    }, [])
 
 
-   const onButtonPressed = () => {
-      if (deliveryStatus === ORDER_STATYES.READY_FOR_PICKUP) {
+   const onButtonPressed = async () => {
+      if (order.status === "READY_FOR_PICKUP") {
          bottomSheetRef.current?.collapse();
          mapRef.current.animateToRegion({
             latitude: driverLocation.latitude,
@@ -96,40 +82,42 @@ const OrderDeliver = () => {
             latitudeDelta: 0.01,
             longitudeDelta: 0.01
          })
-
-         setDeliveryStatus(ORDER_STATYES.ACCEPTED);
+         acceptOrder()
       }
-      if (deliveryStatus === ORDER_STATYES.ACCEPTED) { setDeliveryStatus(ORDER_STATYES.PICKED_UP) }
-      if (deliveryStatus === ORDER_STATYES.PICKED_UP) {
-         console.warn("Delivery Finished")
+      if (order.status === "ACCEPTED") {
+         setDeliveryStatus(ORDER_STATYES.PICKED_UP)
+         pickUpOrder()
+      }
+      if (order.status === "PICKED_UP") {
+         await completeOrder()
          navigation.goBack()
       }
    }
 
    const renderButtonTitle = () => {
-      if (deliveryStatus === ORDER_STATYES.READY_FOR_PICKUP) {
+      if (order.status === "READY_FOR_PICKUP") {
          return "Accept Order"
       }
 
-      if (deliveryStatus === ORDER_STATYES.ACCEPTED) {
+      if (order.status === "ACCEPTED") {
          return "Pick-Up Order"
       }
 
-      if (deliveryStatus === ORDER_STATYES.PICKED_UP) {
+      if (order.status === "PICKED_UP") {
          return "Complete Delivery"
       }
    }
 
    const isButtonDisabled = () => {
-      if (deliveryStatus === ORDER_STATYES.READY_FOR_PICKUP) {
+      if (order.status === "READY_FOR_PICKUP") {
          return false
       }
 
-      if (deliveryStatus === ORDER_STATYES.ACCEPTED && isDriverClose) {
+      if (order.status === "ACCEPTED" && isDriverClose) {
          return false
       }
 
-      if (deliveryStatus === ORDER_STATYES.PICKED_UP && isDriverClose) {
+      if (order.status === "PICKED_UP" && isDriverClose) {
          return false
       }
 
@@ -150,11 +138,10 @@ const OrderDeliver = () => {
       return <ActivityIndicator size={"large"} />
    }
 
-   if (!order || !user || !driverLocation) {
+   if (!order || !driverLocation) {
       return <ActivityIndicator color={"grey"} size={"large"} />
    }
 
-   console.log({ dishItems });
 
    return (
       <View style={styles.container}>
@@ -172,9 +159,9 @@ const OrderDeliver = () => {
          >
             <MapViewDirections
                origin={driverLocation}
-               destination={deliveryStatus === ORDER_STATYES.ACCEPTED ? restaurantLocation : deliveryLocation}
+               destination={order.status === "ACCEPTED" ? restaurantLocation : deliveryLocation}
                strokeWidth={10}
-               waypoints={deliveryStatus === ORDER_STATYES.READY_FOR_PICKUP ? [restaurantLocation, deliveryLocation] : []}
+               waypoints={order.status === "READY_FOR_PICKUP" ? [restaurantLocation] : []}
                strokeColor="#3FC060"
                apikey={"AIzaSyBL_jCIzt9pEeYmcpABj0AeEq4zZpdcyVc"}
                onReady={(result) => {
@@ -196,15 +183,15 @@ const OrderDeliver = () => {
 
             <Marker
                coordinate={deliveryLocation}
-               title={user.name}
-               description={user.address}
+               title={user?.name}
+               description={user?.address}
             >
                <View style={{ backgroundColor: 'green', borderRadius: 25, padding: 5 }}>
                   <MaterialIcons name='restaurant' size={30} color="white" />
                </View>
             </Marker>
          </MapView>
-         {deliveryStatus === ORDER_STATYES.READY_FOR_PICKUP && (
+         {order.status === "READY_FOR_PICKUP" && (
             <Ionicons
                onPress={() => navigation.goBack()}
                name="arrow-back-circle"
@@ -241,16 +228,16 @@ const OrderDeliver = () => {
 
                <View style={{ flexDirection: 'row', marginBottom: 20 }}>
                   <FontAwesome5 name="map-marker-alt" size={30} color="grey" style={{ marginRight: 5 }} />
-                  <Text style={styles.adressText}>{user.address}</Text>
+                  <Text style={styles.adressText}>{user?.address}</Text>
                </View>
 
                <View style={styles.orderDetailsContainer}>
                   {
-                     dishItems.map(item => (
+                     dishes?.map(item => (
                         <Text style={styles.orderItemText} key={item.id}>{item.Dish.name} x{item.quantity}</Text>
                      ))
                   }
-                  
+
                </View>
             </View>
 
