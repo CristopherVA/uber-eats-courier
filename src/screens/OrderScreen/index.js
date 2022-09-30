@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { View, Text, useWindowDimensions } from 'react-native'
-import MapView, { Marker } from 'react-native-maps';
+import MapView from 'react-native-maps';
 import BottomSheet, { BottomSheetFlatList } from '@gorhom/bottom-sheet';
-import { Entypo } from "@expo/vector-icons"
 import { DataStore } from 'aws-amplify';
 import { Order } from '../../models';
 
 // components
 import OrderItem from '../../components/OrderItem';
+import CustomMarker from '../../components/CustomMarker';
 
 
 const OrderScreen = () => {
@@ -35,28 +35,17 @@ const OrderScreen = () => {
          >
             {orders.map((order) => {
                return (
-                  <Marker
+                  <CustomMarker
                      key={order.id}
-                     title={order.Restaurant?.name}
-                     description={order.Restaurant?.address}
-                     coordinate={{
-                        latitude: order.Restaurant?.lat,
-                        longitude: order.Restaurant?.lng
-                     }}
-                  >
-                     <View style={{ backgroundColor: 'green', borderRadius: 50, padding: 5 }}>
-                        <Entypo name="shop" size={24} color="white" />
-                     </View>
-                  </Marker>
+                     data={order.Restaurant}
+                     type="RESTAURANT"
+                  />
                )
             })}
 
          </MapView>
 
-
-
-         <BottomSheet ref={bottomSheetRef} snapPoints={snapPoints} >
-
+         <BottomSheet ref={bottomSheetRef} snapPoints={snapPoints}>
             <View style={{ alignItems: 'center', marginBottom: 20 }}>
                <Text
                   style={{

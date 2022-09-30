@@ -8,7 +8,7 @@ import styles from './styles';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useOrderContext } from '../../context/OrderContext';
 import BottomSheetDetails from './BottomSheetDetails';
-import CustomMarker from './CustomMarker';
+import CustomMarker from '../../components/CustomMarker';
 
 
 const OrderDeliver = () => {
@@ -17,7 +17,6 @@ const OrderDeliver = () => {
    const [driverLocation, setDriverLocation] = useState(null)
    const [totalMin, setTotalMin] = useState(0)
    const [totalKm, setTotalKm] = useState(0)
-   const [isDriverClose, setIsDriverClose] = useState(true)
 
 
    const mapRef = useRef(null)
@@ -51,7 +50,7 @@ const OrderDeliver = () => {
       const foregroundSubscription = Location.watchPositionAsync(
          {
             accuracy: Location.Accuracy.High,
-            distanceInterval: 100
+            distanceInterval: 500
          }, (updatedLocation) => {
             setDriverLocation({
                latitude: updatedLocation.coords.latitude,
@@ -64,6 +63,14 @@ const OrderDeliver = () => {
 
    }, [])
 
+   const zoomInOnDriver = () => {
+      mapRef.current.animateToRegion({
+         latitude: driverLocation.latitude,
+         longitude: driverLocation.longitude,
+         latitudeDelta: 0.01,
+         longitudeDelta: 0.01
+      })
+   }
 
    const restaurantLocation = {
       latitude: order?.Restaurant.lat,
@@ -73,10 +80,6 @@ const OrderDeliver = () => {
    const deliveryLocation = {
       latitude: user?.lat,
       longitude: user?.lng
-   }
-
-   if (!driverLocation) {
-      return <ActivityIndicator size={"large"} />
    }
 
    if (!order || !driverLocation) {
@@ -105,7 +108,6 @@ const OrderDeliver = () => {
                strokeColor="#3FC060"
                apikey={"AIzaSyBL_jCIzt9pEeYmcpABj0AeEq4zZpdcyVc"}
                onReady={(result) => {
-                   setIsDriverClose(result.distance <= 0.1)
                   setTotalMin(result.duration);
                   setTotalKm(result.distance);
                }}
@@ -113,8 +115,8 @@ const OrderDeliver = () => {
             />
 
             <CustomMarker data={order.Restaurant} type="RESTAURANT" />
-            <CustomMarker data={user} type="USER"  />
-       
+            <CustomMarker data={user} type="USER" />
+
          </MapView>
          {order.status === "READY_FOR_PICKUP" && (
             <Ionicons
@@ -127,16 +129,8 @@ const OrderDeliver = () => {
          )}
          <BottomSheetDetails
             totalMin={totalMin}
-            totalKm={totalKm}
-            isDriverClose={isDriverClose}
-            order={order}
-            user={user}
-            dishes={dishes}
-            acceptOrder={acceptOrder}
-            pickUpOrder={pickUpOrder}
-            completeOrder={completeOrder}
-            driverLocation={driverLocation}
-            mapRef={mapRef}
+            totalKm={totalKm}          
+            onAccepted={zoomInOnDriver}
          />
       </View >
    )

@@ -6,72 +6,52 @@ import BottomSheet from "@gorhom/bottom-sheet";
 import { FontAwesome5, Fontisto } from "@expo/vector-icons"
 import styles from "./styles";
 
+const STATUS_TO_TITLE = {
+   READY_FOR_PICKUP: "Accept Order",
+   ACCEPTED: "Pick-Up Order",
+   PICKED_UP: "Complete Delivery"
+}
+
 
 const BottomSheetDetails = ({
    totalMin,
    totalKm,
-   isDriverClose,
-   driverLocation,
-   order,
-   user,
-   dishes,
-   acceptOrder,
-   pickUpOrder,
-   completeOrder,
-   mapRef
+   onAccepted
 }) => {
+
+   const isDriverClose = totalKm <= 1
+
+   const { order, user, dishes, acceptOrder, pickUpOrder, completeOrder } = useOrderContext()
 
    const bottomSheetRef = useRef(null);
    const snapPoints = useMemo(() => ["12%", "95%"], [])
    const navigation = useNavigation()
 
    const onButtonPressed = async () => {
-      if (order.status === "READY_FOR_PICKUP") {
+
+      const { status } = order;
+
+      if (status === "READY_FOR_PICKUP") {
          bottomSheetRef.current?.collapse();
-         mapRef.current.animateToRegion({
-            latitude: driverLocation.latitude,
-            longitude: driverLocation.longitude,
-            latitudeDelta: 0.01,
-            longitudeDelta: 0.01
-         })
-         acceptOrder()
-      }
-      if (order.status === "ACCEPTED") {
+         await acceptOrder()
+         onAccepted()
+      } else if (status === "ACCEPTED") {
          setDeliveryStatus(ORDER_STATYES.PICKED_UP)
-         pickUpOrder()
-      }
-      if (order.status === "PICKED_UP") {
+         await pickUpOrder()
+      } else if (status === "PICKED_UP") {
          await completeOrder()
          navigation.goBack()
       }
    }
 
-   const renderButtonTitle = () => {
-      if (order.status === "READY_FOR_PICKUP") {
-         return "Accept Order"
-      }
-
-      if (order.status === "ACCEPTED") {
-         return "Pick-Up Order"
-      }
-
-      if (order.status === "PICKED_UP") {
-         return "Complete Delivery"
-      }
-   }
 
    const isButtonDisabled = () => {
-      if (order.status === "READY_FOR_PICKUP") {
-         return false
-      }
 
-      if (order.status === "ACCEPTED" && isDriverClose) {
-         return false
-      }
+      const { status } = order
 
-      if (order.status === "PICKED_UP" && isDriverClose) {
-         return false
-      }
+      if (order.status === "READY_FOR_PICKUP") return false;
+
+      if ((status === "ACCEPTED" || status === "PICKED_UP") && isDriverClose) return false;
 
       return true
    }
@@ -118,7 +98,7 @@ const BottomSheetDetails = ({
          </View>
 
          <Pressable onPress={onButtonPressed} style={{ ...styles.buttonContainer, backgroundColor: isButtonDisabled() ? 'grey' : '#3FC060' }} disabled={isButtonDisabled()}>
-            <Text style={styles.buttonText}>{renderButtonTitle()}</Text>
+            <Text style={styles.buttonText}>{STATUS_TO_TITLE[order.status]}</Text>
          </Pressable>
       </BottomSheet >
    )

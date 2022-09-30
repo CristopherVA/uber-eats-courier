@@ -28,33 +28,48 @@ const OrderContextProvider = ({ children }) => {
 
    }
 
-   const acceptOrder = () => {
+   useEffect(() => {
+      if(!order){
+         return;
+      }
+
+      DataStore.observe(Order, order.id).subscribe(({opType, element}) => {
+         if(opType === "UPDATE"){
+            setOrder(element)
+         }
+      })
+   }, [order])
+
+   const acceptOrder = async () => {
       // update the order, and change status, and assign the courier
-      DataStore.save(
+      const updatedOrder = await DataStore.save(
          Order.copyOf(order, (updated) => {
             updated.status = "ACCEPTED";
             updated.Courier = dbCourier;
          })
-      ).then(setOrder)
+      )
+      setOrder(updatedOrder)
    }
 
-   const pickUpOrder = () => {
+   const pickUpOrder = async () => {
       // update the order, and change status, and assign the courier
-      DataStore.save(
+      const updatedOrder = await DataStore.save(
          Order.copyOf(order, (updated) => {
             updated.status = "PICKED_UP";
          })
-      ).then(setOrder)
+      )
+      setOrder(updatedOrder)
    }
 
-   const completeOrder = () => {
+   const completeOrder = async () => {
       // update the order, and change status, and assign the courier
-      DataStore.save(
+      const updatedOrder = await DataStore.save(
          Order.copyOf(order, (updated) => {
             updated.status = "COMPLETED";
             updated.Courier = dbCourier;
          })
-      ).then(setOrder)
+      )
+      setOrder(updatedOrder)
    }
 
    return (
