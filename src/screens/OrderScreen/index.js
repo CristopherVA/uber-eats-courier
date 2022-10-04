@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { View, Text, useWindowDimensions } from 'react-native'
+import { View, Text, useWindowDimensions, ActivityIndicator } from 'react-native'
 import MapView from 'react-native-maps';
+import * as Location from "expo-location"
 import BottomSheet, { BottomSheetFlatList } from '@gorhom/bottom-sheet';
 import { DataStore } from 'aws-amplify';
 import { Order } from '../../models';
@@ -14,6 +15,8 @@ const OrderScreen = () => {
 
    const [orders, setOrders] = useState([])
    const { width, height } = useWindowDimensions()
+   const [driverLocation, setDriverLocation] = useState(null)
+
    const bottomSheetRef = useRef(null);
    const snapPoints = useMemo(() => ["12%", "95%"], [])
    const fetchOrder = () => {
@@ -26,14 +29,37 @@ const OrderScreen = () => {
       fetchOrder()
 
       const subcription = DataStore.observe(Order).subscribe(msg => {
-         if(msg.opType === "UPDATE"){
+         if (msg.opType === "UPDATE") {
             fetchOrder()
          }
       })
 
       return subcription.unsubscribe()
-      
+
    }, [])
+
+   useEffect(() => {
+      (async () => {
+
+         let { status } = await Location.requestForegroundPermissionsAsync()
+         if (!status == "granted") {
+            console.log('NONONO');
+            return;
+         }
+
+         let location = await Location.getCurrentPositionAsync()
+
+         setDriverLocation({
+            latitude: location.coords.latitude,
+            longitude: location.coords.longitude
+         });
+      })()
+   }, [])
+
+
+   if(!driverLocation) {
+      return <ActivityIndicator size={"large"} color={"gray"} />
+   }
 
    return (
       <View style={{ backgroundColor: 'lightblue', flex: 1 }}>
@@ -44,6 +70,12 @@ const OrderScreen = () => {
             }}
             showsUserLocation
             followsUserLocation
+            initialRegion={{
+               latitude: driverLocation?.latitude,
+               longitude: driverLocation?.longitude,
+               latitudeDelta: 0.07,
+               longitudeDelta: 0.07
+            }}
          >
             {orders.map((order) => {
                return (

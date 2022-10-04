@@ -9,11 +9,14 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { useOrderContext } from '../../context/OrderContext';
 import BottomSheetDetails from './BottomSheetDetails';
 import CustomMarker from '../../components/CustomMarker';
-
+import { DataStore } from 'aws-amplify';
+import { Courier } from '../../models';
+import { useAuthContext } from '../../context/AuthContext';
 
 const OrderDeliver = () => {
 
    const { order, user, fetchOrder, dishes, acceptOrder, pickUpOrder, completeOrder } = useOrderContext()
+   const { dbCourier } = useAuthContext()
    const [driverLocation, setDriverLocation] = useState(null)
    const [totalMin, setTotalMin] = useState(0)
    const [totalKm, setTotalKm] = useState(0)
@@ -29,6 +32,13 @@ const OrderDeliver = () => {
    useEffect(() => {
       fetchOrder(id)
    }, [id])
+
+   useEffect(() => {
+      DataStore.save(Courier.copyOf(dbCourier, (updated) => {
+         updated.lat = driverLocation?.latitude;
+         updated.lng = driverLocation?.longitude;
+      }))
+   }, [driverLocation])
 
    useEffect(() => {
       (async () => {
