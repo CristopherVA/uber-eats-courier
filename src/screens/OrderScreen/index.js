@@ -16,11 +16,23 @@ const OrderScreen = () => {
    const { width, height } = useWindowDimensions()
    const bottomSheetRef = useRef(null);
    const snapPoints = useMemo(() => ["12%", "95%"], [])
+   const fetchOrder = () => {
+      DataStore.query(Order, (o) => o.status("eq", "READY_FOR_PICKUP")).then(setOrders);
+   }
 
-   console.log(orders)
 
    useEffect(() => {
-      DataStore.query(Order, (o) => o.status("eq", "READY_FOR_PICKUP")).then(setOrders);
+
+      fetchOrder()
+
+      const subcription = DataStore.observe(Order).subscribe(msg => {
+         if(msg.opType === "UPDATE"){
+            fetchOrder()
+         }
+      })
+
+      return subcription.unsubscribe()
+      
    }, [])
 
    return (

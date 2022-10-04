@@ -33,12 +33,14 @@ const OrderContextProvider = ({ children }) => {
          return;
       }
 
-      DataStore.observe(Order, order.id).subscribe(({opType, element}) => {
+      const subcription = DataStore.observe(Order, order.id).subscribe(({opType, element}) => {
          if(opType === "UPDATE"){
-            setOrder(element)
+            fetchOrder(element.id)
          }
       })
-   }, [order])
+
+      return () => subcription.unsubscribe();
+   }, [order?.id])
 
    const acceptOrder = async () => {
       // update the order, and change status, and assign the courier
